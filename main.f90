@@ -7,12 +7,13 @@ program main
     character(len=100) :: file_name
 
     do
-        print *, 'Menú:'
+        print *, 'Menu:'
         print *, '1. Cargar Inventario Inicial'
         print *, '2. Cargar Instrucciones de Movimientos'
         print *, '3. Crear Informe de Inventario'
-        print *, '4. Salir'
-        print *, 'Ingrese una opción: '
+        print *, '4. Informacion del estudiante'
+        print *, '5. Salir'
+        print *, 'Ingrese una opcion: '
         read *, opcion
 
         select case(opcion)
@@ -29,9 +30,12 @@ program main
             read *, file_name
             call crearInforme(file_name, inventario)
         case(4)
+            print *, 'Brayan Emanuel Garcia '
+            print *, '202300848'
+        case(5)
             exit
         case default
-            print *, 'Opción no válida'
+            print *, 'Opcion no valida'
         end select
     end do
 end program main

@@ -1,0 +1,3 @@
+Laptop;10;800.00;Almacen 1
+Monitor;5;150.00;Almacen 2
+Impresora;2;120.00;Almacen 3

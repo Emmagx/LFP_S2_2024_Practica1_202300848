@@ -1,0 +1,3 @@
+agregar_stock Laptop;5;Almacen 1
+eliminar_equipo Monitor;1;Almacen 2
+agregar_stock Impresora;2;Almacen 3
