@@ -9,8 +9,7 @@ module GestorInventario
         character(len=100), intent(in) :: file_name
         type(Equipo), allocatable, intent(out) :: inventario(:)
         character(len=100) :: line
-        integer :: ios, unit_num, n
-        type(Equipo) :: equipo_tmp
+        integer :: ios, unit_num
 
         unit_num = 10
         open(unit=unit_num, file=file_name, status='old', action='read', iostat=ios)
@@ -21,30 +20,13 @@ module GestorInventario
 
         print *, 'Archivo de inventario abierto exitosamente.'
 
-        n = 0
         do
             read(unit_num, '(A)', iostat=ios) line
             if (ios /= 0) exit
             if (trim(line) /= '') then
                 print *, 'Leyendo linea de inventario:', line
-                call separar(line, ';', equipo_tmp)
-                print *, 'Equipo leido:'
-                print *, 'Nombre:', equipo_tmp%nombre
-                print *, 'Cantidad:', equipo_tmp%cantidad
-                print *, 'Precio Unitario:', equipo_tmp%precio_unitario
-                print *, 'Ubicacion:', equipo_tmp%ubicacion
-                if (allocated(inventario)) then
-                    call extendedArray(inventario)
-                else
-                    allocate(inventario(1))
-                end if
-                n = size(inventario)
-                inventario(n) = equipo_tmp
-                print *, 'Equipo agregado:'
-                print *, 'Nombre:', inventario(n)%nombre
-                print *, 'Cantidad:', inventario(n)%cantidad
-                print *, 'Precio Unitario:', inventario(n)%precio_unitario
-                print *, 'Ubicacion:', inventario(n)%ubicacion
+                ! Llama a procesarInstruccion para procesar cada línea
+                call procesarInstruccion(line, ';', inventario)
             end if
         end do
 
@@ -121,11 +103,13 @@ module GestorInventario
         character(len=100) :: operacion
         character(len=100), allocatable :: datos(:)
         integer :: cantidad, i, n, ios
+        real :: precio_unitario
         logical :: found
 
         ! Inicializar variables
         operacion = ''
         cantidad = 0
+        precio_unitario = 0.0
         found = .false.
 
         ! Separar los datos usando delimitador
@@ -144,14 +128,39 @@ module GestorInventario
         ! Procesar datos según la operación
         n = size(inventario)
 
-        if (operacion == 'agregar_stock') then
-            ! Ahora solo lee la cantidad, ya que el precio_unitario no es necesario
+        if (operacion == 'crear_equipo') then
+            ! Extraer cantidad y precio_unitario de los datos
+            call obtenerCantidadPrecio(datos, cantidad, precio_unitario)
+
+            ! Crear nuevo equipo y agregarlo al inventario
+            if (allocated(inventario)) then
+                call extendedArray(inventario)
+            else
+                allocate(inventario(1))
+            end if
+
+            ! Agregar el nuevo equipo
+            n = size(inventario)
+            inventario(n)%nombre = datos(1)
+            inventario(n)%cantidad = cantidad
+            inventario(n)%precio_unitario = precio_unitario
+            inventario(n)%ubicacion = datos(4)
+
+            print *, 'Equipo creado:'
+            print *, 'Nombre:', inventario(n)%nombre
+            print *, 'Cantidad:', inventario(n)%cantidad
+            print *, 'Precio Unitario:', inventario(n)%precio_unitario
+            print *, 'Ubicacion:', inventario(n)%ubicacion
+
+        else if (operacion == 'agregar_stock') then
+            ! Solo lee la cantidad
             read(datos(2), *, iostat=ios) cantidad
             if (ios /= 0) then
                 print *, 'Error al leer cantidad:', trim(datos(2))
                 stop
             end if
 
+            ! Buscar el equipo en el inventario y agregar stock
             do i = 1, n
                 if (trim(inventario(i)%nombre) == trim(datos(1))) then
                     inventario(i)%cantidad = inventario(i)%cantidad + cantidad
@@ -163,14 +172,16 @@ module GestorInventario
             if (.not. found) then
                 print *, 'Error: No se encontró el equipo para agregar stock.'
             end if
+
         else if (operacion == 'eliminar_equipo') then
-            ! Ahora solo lee la cantidad
+            ! Solo lee la cantidad
             read(datos(2), *, iostat=ios) cantidad
             if (ios /= 0) then
                 print *, 'Error al leer cantidad:', trim(datos(2))
                 stop
             end if
 
+            ! Buscar el equipo en el inventario y eliminar stock
             do i = 1, n
                 if (trim(inventario(i)%nombre) == trim(datos(1))) then
                     inventario(i)%cantidad = inventario(i)%cantidad - cantidad
@@ -183,6 +194,7 @@ module GestorInventario
             if (.not. found) then
                 print *, 'Error: No se encontró el equipo para eliminar.'
             end if
+
         else
             print *, 'Error: Operación no válida:', operacion
         end if
@@ -296,24 +308,37 @@ module GestorInventario
         type(Equipo), allocatable, intent(in) :: inventario(:)
         integer :: unit_num, i
         real :: valor_total
-
+        character(len=100) :: separator
         unit_num = 12
         open(unit=unit_num, file=file_name, status='replace', action='write')
-
+        separator = '-------------------------------------------------------------------------'
         print *, 'Creando informe en el archivo:', file_name
-
+        
+        ! Escribir encabezado
         write(unit_num, '(A)') 'Informe de Inventario:'
-        write(unit_num, '(A)') 'Equipo    Cantidad    Precio Unitario    Valor Total    Ubicacion'
+        write(unit_num, '(A7, A9, A16, A12, A10)') &
+            'Equipo', 'Cantidad', 'Precio Unitario', 'Valor Total', 'Ubicacion'
+        write(unit_num, '(A)') separator
+        ! Escribir cada entrada de inventario
         do i = 1, size(inventario)
-            valor_total = inventario(i)%cantidad * inventario(i)%precio_unitario
-            write(unit_num, '(A, I6, F8.2, F10.2, A)') trim(inventario(i)%nombre) // '    ', &
-                inventario(i)%cantidad, inventario(i)%precio_unitario, valor_total, &
-                trim(inventario(i)%ubicacion)
+            if (trim(adjustl(inventario(i)%nombre)) /= '' .and. inventario(i)%cantidad > 0) then
+                valor_total = inventario(i)%cantidad * inventario(i)%precio_unitario
+                write(unit_num, '(A10, I9, F16.2, F12.2, A10)') &
+                    trim(adjustl(inventario(i)%nombre)), &
+                    inventario(i)%cantidad, &
+                    inventario(i)%precio_unitario, &
+                    valor_total, &
+                    trim(adjustl(inventario(i)%ubicacion))
+            end if
         end do
 
         close(unit_num)
         print *, 'Informe creado exitosamente.'
     end subroutine crearInforme
+
+
+
+
 
     subroutine separar(line, delimitador, equipo_tmp)
         implicit none
