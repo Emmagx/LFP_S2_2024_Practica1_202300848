@@ -70,7 +70,7 @@ module GestorInventario
         integer :: n, new_size
 
         n = size(inventario)
-        new_size = n + 10  ! Incrementar el tamaño en un valor fijo, como 10
+        new_size = n+1 ! Incrementar el tamaño en un valor fijo, como 10
 
         print *, 'Redimensionando arreglo de tamaño', n, 'a', new_size
         allocate(temp(new_size))
@@ -95,112 +95,134 @@ module GestorInventario
         array = temp
     end subroutine extendedArrayCaracteres
 
-    subroutine procesarInstruccion(line, delimitador, inventario)
-        implicit none
-        character(len=100), intent(in) :: line
-        character(len=1), intent(in) :: delimitador
-        type(Equipo), allocatable, intent(inout) :: inventario(:)
-        character(len=100) :: operacion
-        character(len=100), allocatable :: datos(:)
-        integer :: cantidad, i, n, ios
-        real :: precio_unitario
-        logical :: found
+subroutine procesarInstruccion(line, delimitador, inventario)
+    implicit none
+    character(len=100), intent(in) :: line
+    character(len=1), intent(in) :: delimitador
+    type(Equipo), allocatable, intent(inout) :: inventario(:)
+    character(len=100) :: operacion
+    character(len=100), allocatable :: datos(:)
+    integer :: cantidad, i, n, ios
+    real :: precio_unitario
+    logical :: found, ubicacion_correcta
 
-        ! Inicializar variables
-        operacion = ''
-        cantidad = 0
-        precio_unitario = 0.0
-        found = .false.
+    ! Inicializar variables
+    operacion = ''
+    cantidad = 0
+    precio_unitario = 0.0
+    found = .false.
+    ubicacion_correcta = .false.
 
-        ! Separar los datos usando delimitador
-        call separarDatos(line, delimitador, operacion, datos)
+    ! Separar los datos usando delimitador
+    call separarDatos(line, delimitador, operacion, datos)
 
-        print *, 'Operacion:', operacion
-        print *, 'Datos:', datos
+    print *, 'Operacion:', operacion
+    print *, 'Datos:', datos
 
-        ! Verifica si se ha leído correctamente la operación y los datos
-        if (trim(operacion) == '') then
-            print *, 'Error: No se ha encontrado una operación válida.'
-            if (allocated(datos)) deallocate(datos)
-            return
-        end if
-
-        ! Procesar datos según la operación
-        n = size(inventario)
-
-        if (operacion == 'crear_equipo') then
-            ! Extraer cantidad y precio_unitario de los datos
-            call obtenerCantidadPrecio(datos, cantidad, precio_unitario)
-
-            ! Crear nuevo equipo y agregarlo al inventario
-            if (allocated(inventario)) then
-                call extendedArray(inventario)
-            else
-                allocate(inventario(1))
-            end if
-
-            ! Agregar el nuevo equipo
-            n = size(inventario)
-            inventario(n)%nombre = datos(1)
-            inventario(n)%cantidad = cantidad
-            inventario(n)%precio_unitario = precio_unitario
-            inventario(n)%ubicacion = datos(4)
-
-            print *, 'Equipo creado:'
-            print *, 'Nombre:', inventario(n)%nombre
-            print *, 'Cantidad:', inventario(n)%cantidad
-            print *, 'Precio Unitario:', inventario(n)%precio_unitario
-            print *, 'Ubicacion:', inventario(n)%ubicacion
-
-        else if (operacion == 'agregar_stock') then
-            ! Solo lee la cantidad
-            read(datos(2), *, iostat=ios) cantidad
-            if (ios /= 0) then
-                print *, 'Error al leer cantidad:', trim(datos(2))
-                stop
-            end if
-
-            ! Buscar el equipo en el inventario y agregar stock
-            do i = 1, n
-                if (trim(inventario(i)%nombre) == trim(datos(1))) then
-                    inventario(i)%cantidad = inventario(i)%cantidad + cantidad
-                    found = .true.
-                    exit
-                end if
-            end do
-
-            if (.not. found) then
-                print *, 'Error: No se encontró el equipo para agregar stock.'
-            end if
-
-        else if (operacion == 'eliminar_equipo') then
-            ! Solo lee la cantidad
-            read(datos(2), *, iostat=ios) cantidad
-            if (ios /= 0) then
-                print *, 'Error al leer cantidad:', trim(datos(2))
-                stop
-            end if
-
-            ! Buscar el equipo en el inventario y eliminar stock
-            do i = 1, n
-                if (trim(inventario(i)%nombre) == trim(datos(1))) then
-                    inventario(i)%cantidad = inventario(i)%cantidad - cantidad
-                    if (inventario(i)%cantidad < 0) inventario(i)%cantidad = 0
-                    found = .true.
-                    exit
-                end if
-            end do
-
-            if (.not. found) then
-                print *, 'Error: No se encontró el equipo para eliminar.'
-            end if
-
-        else
-            print *, 'Error: Operación no válida:', operacion
-        end if
-
+    ! Verifica si se ha leído correctamente la operación y los datos
+    if (trim(operacion) == '') then
+        print *, 'Error: No se ha encontrado una operación válida.'
         if (allocated(datos)) deallocate(datos)
-    end subroutine procesarInstruccion
+        return
+    end if
+
+    ! Procesar datos según la operación
+    n = size(inventario)
+
+    if (operacion == 'crear_equipo') then
+        ! Extraer cantidad y precio_unitario de los datos
+        call obtenerCantidadPrecio(datos, cantidad, precio_unitario)
+
+        ! Crear nuevo equipo y agregarlo al inventario
+        if (allocated(inventario)) then
+            call extendedArray(inventario)
+        else
+            allocate(inventario(1))
+        end if
+
+        ! Agregar el nuevo equipo
+        n = size(inventario)
+        inventario(n)%nombre = datos(1)
+        inventario(n)%cantidad = cantidad
+        inventario(n)%precio_unitario = precio_unitario
+        inventario(n)%ubicacion = datos(4)
+
+        print *, 'Equipo creado:'
+        print *, 'Nombre:', inventario(n)%nombre
+        print *, 'Cantidad:', inventario(n)%cantidad
+        print *, 'Precio Unitario:', inventario(n)%precio_unitario
+        print *, 'Ubicacion:', inventario(n)%ubicacion
+
+    else if (operacion == 'agregar_stock') then
+        ! Solo lee la cantidad
+        read(datos(2), *, iostat=ios) cantidad
+        if (ios /= 0) then
+            print *, 'Error al leer cantidad:', trim(datos(2))
+            stop
+        end if
+
+        ! Buscar el equipo en el inventario y agregar stock si la ubicación es correcta
+        do i = 1, n
+            if (trim(inventario(i)%nombre) == trim(datos(1))) then
+                found = .true.
+                if (trim(inventario(i)%ubicacion) == trim(datos(3))) then
+                    inventario(i)%cantidad = inventario(i)%cantidad + cantidad
+                    ubicacion_correcta = .true.
+                    exit
+                else
+                    print *, 'Error: La ubicación no coincide para el equipo', trim(datos(1))
+                end if
+            end if
+        end do
+
+        if (.not. found) then
+            print *, 'Error: No se encontró el equipo para agregar stock.'
+        end if
+        if (found .and. .not. ubicacion_correcta) then
+            print *, 'Error: La ubicación no coincide para el equipo', trim(datos(1))
+        end if
+
+    else if (operacion == 'eliminar_equipo') then
+        ! Solo lee la cantidad
+        read(datos(2), *, iostat=ios) cantidad
+        if (ios /= 0) then
+            print *, 'Error al leer cantidad:', trim(datos(2))
+            stop
+        end if
+
+        ! Buscar el equipo en el inventario y eliminar stock si la ubicación es correcta
+        do i = 1, n
+            if (trim(inventario(i)%nombre) == trim(datos(1))) then
+                found = .true.
+                if (trim(inventario(i)%ubicacion) == trim(datos(3))) then
+                    if (inventario(i)%cantidad >= cantidad) then
+                        inventario(i)%cantidad = inventario(i)%cantidad - cantidad
+                    else
+                        print *, 'Error: Cantidad a eliminar excede la cantidad disponible.'
+                    end if
+                    if (inventario(i)%cantidad < 0) inventario(i)%cantidad = 0
+                    ubicacion_correcta = .true.
+                    exit
+                else
+                    print *, 'Error: La ubicación no coincide para el equipo', trim(datos(1))
+                end if
+            end if
+        end do
+
+        if (.not. found) then
+            print *, 'Error: No se encontró el equipo para eliminar stock.'
+        end if
+        if (found .and. .not. ubicacion_correcta) then
+            print *, 'Error: La ubicación no coincide para el equipo', trim(datos(1))
+        end if
+
+    else
+        print *, 'Error: Operación no válida:', operacion
+    end if
+
+    if (allocated(datos)) deallocate(datos)
+end subroutine procesarInstruccion
+
 
     subroutine separarDatos(line, delimitador, operacion, datos)
         implicit none
@@ -309,21 +331,40 @@ module GestorInventario
         integer :: unit_num, i
         real :: valor_total
         character(len=100) :: separator
+        logical :: valid_entry
         unit_num = 12
-        open(unit=unit_num, file=file_name, status='replace', action='write')
+
+        open(unit=unit_num, file=file_name, status='unknown', action='write')
         separator = '-------------------------------------------------------------------------'
         print *, 'Creando informe en el archivo:', file_name
-        
+
         ! Escribir encabezado
         write(unit_num, '(A)') 'Informe de Inventario:'
-        write(unit_num, '(A7, A9, A16, A12, A10)') &
+        write(unit_num, '(A20, A20, A20, A20, A10)') &
             'Equipo', 'Cantidad', 'Precio Unitario', 'Valor Total', 'Ubicacion'
         write(unit_num, '(A)') separator
+        do i = 1, size(inventario)
+            print *, 'Item', i
+            print *, 'Nombre:', trim(adjustl(inventario(i)%nombre))
+            print *, 'Cantidad:', inventario(i)%cantidad
+            print *, 'Precio Unitario:', inventario(i)%precio_unitario
+            print *, 'Ubicacion:', trim(adjustl(inventario(i)%ubicacion))
+        end do
+
         ! Escribir cada entrada de inventario
         do i = 1, size(inventario)
-            if (trim(adjustl(inventario(i)%nombre)) /= '' .and. inventario(i)%cantidad > 0) then
+            print *, 'Processing entry:', i
+            print *, 'Nombre:', trim(adjustl(inventario(i)%nombre))
+            print *, 'Cantidad:', inventario(i)%cantidad
+            print *, 'Precio Unitario:', inventario(i)%precio_unitario
+
+            valid_entry = trim(adjustl(inventario(i)%nombre)) /= '' .and. &
+                        inventario(i)%cantidad > 0 .and. &
+                        inventario(i)%precio_unitario >= 0.00
+
+            if (valid_entry) then
                 valor_total = inventario(i)%cantidad * inventario(i)%precio_unitario
-                write(unit_num, '(A10, I9, F16.2, F12.2, A10)') &
+                write(unit_num, '(A20, I8, F14.2, F14.2, A10)') &
                     trim(adjustl(inventario(i)%nombre)), &
                     inventario(i)%cantidad, &
                     inventario(i)%precio_unitario, &
@@ -335,10 +376,6 @@ module GestorInventario
         close(unit_num)
         print *, 'Informe creado exitosamente.'
     end subroutine crearInforme
-
-
-
-
 
     subroutine separar(line, delimitador, equipo_tmp)
         implicit none
