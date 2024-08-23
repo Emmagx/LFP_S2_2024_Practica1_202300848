@@ -79,22 +79,6 @@ module GestorInventario
         inventario = temp
     end subroutine extendedArray
 
-    subroutine extendedArrayCaracteres(array)
-        implicit none
-        character(len=100), allocatable, intent(inout) :: array(:)
-        character(len=100), allocatable :: temp(:)
-        integer :: n, new_size
-
-        n = size(array)
-        new_size = n + 10  ! Incrementar el tamaño en un valor fijo, como 10
-
-        print *, 'Redimensionando arreglo de tamaño', n, 'a', new_size
-        allocate(temp(new_size))
-        temp(1:n) = array
-        deallocate(array)
-        array = temp
-    end subroutine extendedArrayCaracteres
-
 subroutine procesarInstruccion(line, delimitador, inventario)
     implicit none
     character(len=100), intent(in) :: line
@@ -277,20 +261,6 @@ end subroutine procesarInstruccion
         print *, 'Datos:', datos
     end subroutine separarDatos
 
-    subroutine reshapeDatos(datos, num_palabras)
-        implicit none
-        character(len=100), allocatable, intent(inout) :: datos(:)
-        integer, intent(in) :: num_palabras
-        character(len=100), allocatable :: temp(:)
-        
-        if (size(datos) > num_palabras) then
-            allocate(temp(num_palabras))
-            temp = datos(1:num_palabras)
-            deallocate(datos)
-            datos = temp
-        end if
-    end subroutine reshapeDatos
-
     subroutine obtenerCantidadPrecio(datos, cantidad, precio_unitario)
         implicit none
         character(len=100), dimension(:), intent(in) :: datos
@@ -377,39 +347,5 @@ end subroutine procesarInstruccion
         print *, 'Informe creado exitosamente.'
     end subroutine crearInforme
 
-    subroutine separar(line, delimitador, equipo_tmp)
-        implicit none
-        character(len=100), intent(in) :: line
-        character(len=1), intent(in) :: delimitador
-        type(Equipo), intent(out) :: equipo_tmp
-        character(len=100), allocatable :: tokens(:)
-        integer :: i, pos
-        character(len=100) :: temp
-
-        print *, 'Separando la linea:', line
-
-        temp = trim(line)
-        pos = 1
-
-        ! Establecer un tamaño máximo para `tokens` (puedes ajustar este valor según sea necesario)
-        allocate(tokens(4))
-
-        do i = 1, 4
-            if (index(temp, delimitador) > 0) then
-                tokens(i) = trim(adjustl(temp(1:index(temp, delimitador) - 1)))
-                temp = trim(adjustl(temp(index(temp, delimitador) + 1:)))
-            else
-                tokens(i) = trim(adjustl(temp))
-                exit
-            end if
-        end do
-
-        equipo_tmp%nombre = tokens(1)
-        read(tokens(2), *) equipo_tmp%cantidad
-        read(tokens(3), *) equipo_tmp%precio_unitario
-        equipo_tmp%ubicacion = tokens(4)
-
-        print *, 'Equipo separado:', equipo_tmp%nombre, equipo_tmp%cantidad, equipo_tmp%precio_unitario, equipo_tmp%ubicacion
-    end subroutine separar
 
 end module GestorInventario
