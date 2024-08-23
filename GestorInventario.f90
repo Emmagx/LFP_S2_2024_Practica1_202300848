@@ -216,7 +216,6 @@ end subroutine procesarInstruccion
         character(len=100), allocatable, intent(out) :: datos(:)
         integer :: pos_delim, num_palabras, i
         character(len=100) :: buffer
-        character(len=100) :: temp
 
         ! Inicializar variables
         operacion = ''
